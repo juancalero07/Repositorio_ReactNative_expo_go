@@ -1,38 +1,27 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import BotonEliminarCliente from "./BotonEliminarCliente";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import BotonEliminarEdad from "./BotonEliminarEdad.js";
 
-const TablaClientes = ({ clientes, eliminarCliente, editarCliente }) => {
+const TablaEdades = ({ edades, eliminarEdad }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Tabla de Clientes</Text>
+      <Text style={styles.titulo}>Tabla de Edades</Text>
 
-      {/* Encabezado */}
+      {/* Encabezado de la tabla */}
       <View style={[styles.fila, styles.encabezado]}>
         <Text style={[styles.celda, styles.textoEncabezado]}>Nombre</Text>
-        <Text style={[styles.celda, styles.textoEncabezado]}>Apellido</Text>
+        <Text style={[styles.celda, styles.textoEncabezado]}>Edad</Text>
         <Text style={[styles.celda, styles.textoEncabezado]}>Acciones</Text>
       </View>
 
-      {/* Contenido */}
+      {/* Contenido de la tabla */}
       <ScrollView>
-        {clientes.map((item) => (
+        {edades.map((item) => (
           <View key={item.id} style={styles.fila}>
             <Text style={styles.celda}>{item.nombre}</Text>
-            <Text style={styles.celda}>{item.apellido}</Text>
-
+            <Text style={styles.celda}>{item.edad}</Text>
             <View style={styles.celdaAcciones}>
-              <TouchableOpacity
-                style={styles.botonEditar}
-                onPress={() => editarCliente(item)}
-              >
-                <Text style={styles.textoBoton}>✏️</Text>
-              </TouchableOpacity>
-
-              <BotonEliminarCliente
-                id={item.id}
-                eliminarCliente={eliminarCliente}
-              />
+              <BotonEliminarEdad id={item.id} eliminarEdad={eliminarEdad} />
             </View>
           </View>
         ))}
@@ -75,16 +64,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: "center",
   },
-  botonEditar: {
-    backgroundColor: "#a0a5a1ff",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  textoBoton: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
 });
 
-export default TablaClientes;
+export default TablaEdades;

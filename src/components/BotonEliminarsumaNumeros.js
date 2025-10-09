@@ -1,20 +1,20 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
 
-const BotonEliminarProducto = ({ id, eliminarProducto }) => {
+const BotonEliminarsumaNumeros = ({ id, eliminarSuma }) => {
   const [visible, setVisible] = useState(false);
 
   const confirmarEliminar = () => {
-    editarProducto(false);
-    eliminarProducto(id);
+    setVisible(false);
+    eliminarSuma(id);
   };
 
   return (
     <View>
       {/* Botón pequeño */}
       <TouchableOpacity
-        style={styles.botonEditar}
-        onPress={() => editarProducto(item)}
+        style={styles.boton}
+        onPress={() => setVisible(true)}
       >
         <Text style={styles.textoBoton}>🗑</Text>
       </TouchableOpacity>
@@ -28,7 +28,9 @@ const BotonEliminarProducto = ({ id, eliminarProducto }) => {
       >
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={styles.texto}>¿Desea eliminar este producto?</Text>
+            <Text style={styles.texto}>
+              ¿Desea eliminar este registro de suma?
+            </Text>
 
             <View style={styles.fila}>
               <TouchableOpacity
@@ -51,7 +53,6 @@ const BotonEliminarProducto = ({ id, eliminarProducto }) => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   boton: {
@@ -76,8 +77,12 @@ const styles = StyleSheet.create({
     width: "80%",
     alignItems: "center",
   },
-  texto: { fontSize: 18, marginBottom: 20 },
-  fila: { flexDirection: "row", justifyContent: "space-between", width: "100%" },
+  texto: { fontSize: 18, marginBottom: 20, textAlign: "center" },
+  fila: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
   botonAccion: {
     flex: 1,
     marginHorizontal: 5,
@@ -90,4 +95,4 @@ const styles = StyleSheet.create({
   textoAccion: { color: "white", fontWeight: "bold" },
 });
 
-export default BotonEliminarProducto;
+export default BotonEliminarsumaNumeros;
