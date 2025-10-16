@@ -1,23 +1,36 @@
-import React from "react";
-import { View, StyleSheet,ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { View } from "react-native";
+import { auth } from "./src/database/firebaseconfig";
+import Login from "./src/views/Login";
 import Productos from "./src/views/Productos";
-import Clientes from "./src/views/Clientes"
-import Promedio  from"./src/views/Promedio"
-import SumaNumeros from "./src/views/sumaNumeros";
-import Triangulos from "./src/views/Triangulos";
 
 
+export default function App() {
+    const [usuario, setUsuario] = useState(null);
 
-export default function App( ) {
+    useEffect(() => {
+        // Escucha los cambios en la autenticación (login/logout)
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUsuario(user);
+        });
+        return unsubscribe;
+    }, []);
 
+    const cerrarSesion = async () => {
+        await signOut(auth);
+    };
+
+    if (!usuario) {
+        // Si no hay usuario autenticado, mostrar login
+        return <Login onLoginSuccess={() => setUsuario(auth.currentUser)} />;
+    }
+
+    // Si hay usuario autenticado, mostrar productos
     return (
-      <>
-    <ScrollView>
-      <Productos />
-      <Clientes />
-     
-      </ScrollView>
-      </>
-      
+        <View style={{ flex: 1 }}>
+            <Productos cerrarSesion={cerrarSesion}/>
+           
+        </View>
     );
 }
