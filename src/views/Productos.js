@@ -1,9 +1,10 @@
 import React, { useEffect, useState} from "react";
 import { View, StyleSheet, Alert, Button} from "react-native";
 import { db } from "../database/firebaseconfig.js";
-import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc ,query, where, orderBy, limit} from "firebase/firestore";
 import FormularioProductos from "../components/FormularioProductos.js";
 import TablaProductos from "../components/TablaProductos.js";
+
 
 
 const Productos = ({cerrarSesion}) => {
@@ -26,7 +27,37 @@ const Productos = ({cerrarSesion}) => {
     }
   };
 
+
+const obtenerCiudadesGuatemalaMasPobladas = async () => {
+  try {
+    console.log(" Consulta: Obtener las 2 ciudades más pobladas de Guatemala");
+
+    const ref = collection(db, "ciudades");
+    const q = query(
+      ref,
+      where("pais", "==", "Guatemala"),
+      orderBy("poblacion", "desc"),
+      limit(2)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      console.log("No hay ciudades de Guatemala.");
+      return;
+    }
+
+    console.log("Resultados:");
+    snapshot.forEach((doc) => {
+      console.log(`ID: ${doc.id}`, doc.data());
+    });
+  } catch (error) {
+    console.error("Error en la consulta:", error);
+  }
+};
+
   useEffect(() => {
+
     cargarDatos();
   }, []);
 
