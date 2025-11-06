@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { auth } from "./src/database/firebaseconfig";
 import Login from "./src/views/Login";
 import Productos from "./src/views/Productos";
-import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; // ✅ solo usamos esta
+//import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; // ✅ solo usamos esta
 
 export default function App() {
   const [usuario, setUsuario] = useState(null);
