@@ -3,17 +3,16 @@ import { View, StyleSheet, Alert, Button} from "react-native";
 import { db } from "../database/firebaseconfig.js";
 import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc ,query, where, orderBy, limit} from "firebase/firestore";
 
-// === INICIO DE IMPORTACIONES DE LA GUÍA ===
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
-import * as Clipboard from "expo-clipboard";
-// === FIN DE IMPORTACIONES DE LA GUÍA ===
+// === Importaciones de Expo para Archivos y Compartir ===
+import * as FileSystem from "expo-file-system/legacy"; 
+import * as Sharing from "expo-sharing"; 
+import * as Clipboard from "expo-clipboard"; 
 
 import FormularioProductos from "../components/FormularioProductos.js";
 import TablaProductos from "../components/TablaProductos.js";
 
 
-// === CONSTANTE DE COLECCIONES DE LA GUÍA ===
+// === CONSTANTE DE COLECCIONES ===
 const colecciones = ["productos", "usuarios", "edades", "ciudades"];
 // ===========================================
 
@@ -36,8 +35,77 @@ const Productos = ({cerrarSesion}) => {
             console.error("Error al obtener documentos:", error);
         }
     };
+
+    // ------------------------------------------------------------------
+    // ---------------------- FUNCIONES PARA EXCEL ----------------------
+    // ------------------------------------------------------------------
+
+    // Función para convertir ArrayBuffer (respuesta binaria) a Base64
+    const arrayBufferToBase64 = (buffer) => {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    };
+
+    // Función que llama a la API de AWS Lambda para generar el Excel
+    const generarExcel = async () => {
+        try {
+            // Datos de prueba para el Excel. Puedes reemplazarlos con datos dinámicos si es necesario.
+            const datosParaExcel = [
+                { nombre: "Producto A", categoria: "Electrónicos", precio: 100 },
+                { nombre: "Producto B", categoria: "Ropa", precio: 50 },
+                { nombre: "Producto C", categoria: "Electrónicos", precio: 75 },
+            ];
+
+            // 1. Llamada a tu API Gateway
+            const response = await fetch("https://c215pf5em9.execute-api.us-east-2.amazonaws.com/generarexcel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ datos: datosParaExcel }), 
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}. Revisa el CloudWatch de tu Lambda.`);
+            }
+
+            // 2. Obtención de ArrayBuffer y conversión a base64
+            const arrayBuffer = await response.arrayBuffer();
+            const base64 = arrayBufferToBase64(arrayBuffer);
+
+            // 3. Ruta temporal para el archivo
+            const fileUri = FileSystem.documentDirectory + "reporte.xlsx";
+
+            // 4. Escribir el archivo Excel en el sistema de archivos de Expo
+            await FileSystem.writeAsStringAsync(fileUri, base64, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            // 5. Compartir el archivo generado
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    dialogTitle: 'Descargar Reporte Excel'
+                });
+                Alert.alert("Éxito", "Archivo Excel generado y listo para compartir.");
+            } else {
+                Alert.alert("Aviso", "La función Compartir no está disponible en este dispositivo.");
+            }
+
+        } catch (error) {
+            console.error("Error generando Excel:", error);
+            Alert.alert("Error de API/Excel", `Error: ${error.message}`);
+        }
+    };
+
+    // ------------------------------------------------------------------
+    // ---------------------- FUNCIONES PARA JSON -----------------------
+    // ------------------------------------------------------------------
     
-    // === FUNCIÓN DE LA GUÍA: CARGAR DATOS DE UNA COLECCIÓN ESPECÍFICA ===
+    // Función para cargar datos de una colección específica
     const cargarDatosFirebase = async (nombreColeccion) => {
 
         if (!nombreColeccion || typeof nombreColeccion !== 'string') {
@@ -58,20 +126,17 @@ const Productos = ({cerrarSesion}) => {
 
         } catch (error) {
             console.error(`Error extrayendo datos de la colección '${nombreColeccion}':`, error);
-            // Mostrará el error de permisos aquí (si es el caso)
             return; 
         }
     };
     
-    // === FUNCIÓN DE LA GUÍA: CARGAR TODOS LOS DATOS ===
+    // Función para cargar todas las colecciones
     const cargarTodasLasColecciones = async () => {
         try {
             const datosExportados = {};
 
             for (const col of colecciones) {
-                // Llama a la función de carga individual para cada colección
                 const datosColeccion = await cargarDatosFirebase(col); 
-                // Añade los datos si no hay error
                 if (datosColeccion) {
                     Object.assign(datosExportados, datosColeccion);
                 }
@@ -81,12 +146,11 @@ const Productos = ({cerrarSesion}) => {
 
         } catch (error) {
             console.error("Error extrayendo todos los datos:", error);
-            // Esto solo se ejecutará si hay un error no capturado en cargarDatosFirebase
             return {}; 
         }
     };
     
-    // === FUNCIÓN DE EXPORTACIÓN Y COPIADO DE LA GUÍA ===
+    // Función principal de exportación (JSON/TXT)
     const exportarDatos = async (nombreColeccion, exportarTodos = false) => {
         try {
             // 1. CARGAR DATOS
@@ -94,10 +158,7 @@ const Productos = ({cerrarSesion}) => {
                 ? await cargarTodasLasColecciones()
                 : await cargarDatosFirebase(nombreColeccion); 
 
-            // Verificar que se hayan cargado datos
             if (!datos || Object.keys(datos).length === 0) {
-                // La función ya maneja el error internamente (Error extrayendo datos...),
-                // pero alertamos al usuario.
                 Alert.alert("Aviso", "No se encontraron datos para exportar. Revisa la consola o las reglas de Firebase.");
                 return;
             }
@@ -110,17 +171,15 @@ const Productos = ({cerrarSesion}) => {
             await Clipboard.setStringAsync(jsonString);
             console.log("Datos (JSON) copiados al portapapeles.");
 
-            // 4. Verificar y compartir el archivo
+            // 4. Compartir el archivo
             if (!(await Sharing.isAvailableAsync())) {
                 Alert.alert("Aviso", "La función Compartir/Guardar no está disponible en tu dispositivo");
                 return;
             }
 
-            // Guardar el archivo temporalmente
             const fileUri = FileSystem.cacheDirectory + baseFileName;
             await FileSystem.writeAsStringAsync(fileUri, jsonString);
 
-            // Abrir el diálogo de compartir
             await Sharing.shareAsync(fileUri, {
                 mimeType: 'text/plain',
                 dialogTitle: exportarTodos ? 'Compartir todos los datos de Firebase (JSON)' : `Compartir datos de ${nombreColeccion} (JSON)`
@@ -158,16 +217,15 @@ const Productos = ({cerrarSesion}) => {
             snapshot.forEach((doc) => {
                 console.log(`ID: ${doc.id}`, doc.data());
             });
-             Alert.alert("Consulta Ejecutada", "Resultados en la consola (terminal).");
+            Alert.alert("Consulta Ejecutada", "Resultados en la consola (terminal).");
         } catch (error) {
             console.error("Error en la consulta:", error);
-             Alert.alert("Error", "Error al ejecutar la consulta: " + error.message);
+            Alert.alert("Error", "Error al ejecutar la consulta: " + error.message);
         }
     };
     
     
     useEffect(() => {
-        // Si tienes una llamada a 'ejecutarConsultas()' aquí, DEBES ELIMINARLA.
         cargarDatos();
     }, []);
 
@@ -176,7 +234,7 @@ const Productos = ({cerrarSesion}) => {
         setNuevoProducto({ ...nuevoProducto, [campo]: valor });
     };
 
-    // ... (El resto de tus funciones CRUD existentes se mantiene sin cambios) ...
+    // ... (Funciones CRUD de productos) ...
     const guardarProducto = async () => { /* Tu código aquí */ };
     const eliminarProducto = async (id) => { /* Tu código aquí */ };
     const editarProducto = (producto) => { /* Tu código aquí */ };
@@ -195,7 +253,7 @@ const Productos = ({cerrarSesion}) => {
                 
             />
 
-            {/* Este es el único botón de consulta que dejaremos limpio, si lo necesitas */}
+            {/* BOTÓN para la consulta de ciudades */}
             <View style={{ marginVertical: 10 }}>
                 <Button 
                     title="Ejecutar Consulta: Ciudades" 
@@ -203,7 +261,12 @@ const Productos = ({cerrarSesion}) => {
                 />
             </View>
 
-            {/* === BOTONES DE EXPORTACIÓN DE LA GUÍA === */}
+            {/* === BOTÓN PARA GENERAR EXCEL === */}
+            <View style={{ marginVertical: 10 }}>
+                <Button title="Generar Excel" onPress={generarExcel} />
+            </View>
+
+            {/* === BOTONES DE EXPORTACIÓN JSON === */}
 
             <View style={{ marginVertical: 10 }}>
                 <Button 
