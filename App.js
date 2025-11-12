@@ -3,12 +3,14 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { View } from "react-native";
 import { auth } from "./src/database/firebaseconfig";
 import Login from "./src/views/Login";
-// import Productos from "./src/views/Productos"; // 👈 Descomentar si la necesitas después
+// import Productos from "./src/views/Productos"; 
 
-// 🎯 Importar la nueva vista de Realtime Database
+// 🎯 Importar la vista de la práctica (se mantiene)
 import ProductosRealtime from "./src/views/ProductosRealtime"; 
+// 🎯 Importar la vista de la asignación (nueva)
+import IMCCalculator from "./src/views/MCCalculator"
 
-// import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; // ✅ solo usamos esta
+// import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; 
 
 export default function App() {
   const [usuario, setUsuario] = useState(null);
@@ -24,7 +26,7 @@ export default function App() {
 
         try {
           // 🔥 Ejecuta las consultas (actividades del documento)
-          // await ejecutarConsultas(); // Si usas esta línea, asegúrate de importarla
+          // await ejecutarConsultas(); 
         } catch (error) {
           console.error("❌ Error al ejecutar las consultas:", error);
         }
@@ -46,11 +48,12 @@ export default function App() {
     return <Login onLoginSuccess={() => setUsuario(auth.currentUser)} />;
   }
 
-  // 🎯 Reemplazar la vista 'Productos' por 'ProductosRealtime'
-  // Esto cumple con la guía para probar el Realtime Database [cite: 30]
+  // 🎯 Renderizar el componente IMCCalculator para la asignación
+  // La línea de ProductosRealtime se comenta para que se muestre IMCCalculator.
   return (
     <View style={{ flex: 1 }}>
-      <ProductosRealtime cerrarSesion={cerrarSesion} /> 
+      {/* <ProductosRealtime cerrarSesion={cerrarSesion} /> */}
+      <IMCCalculator cerrarSesion={cerrarSesion} />
     </View>
   );
 }
