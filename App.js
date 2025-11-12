@@ -3,8 +3,12 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { View } from "react-native";
 import { auth } from "./src/database/firebaseconfig";
 import Login from "./src/views/Login";
-import Productos from "./src/views/Productos";
-//import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; // ✅ solo usamos esta
+// import Productos from "./src/views/Productos"; // 👈 Descomentar si la necesitas después
+
+// 🎯 Importar la nueva vista de Realtime Database
+import ProductosRealtime from "./src/views/ProductosRealtime"; 
+
+// import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; // ✅ solo usamos esta
 
 export default function App() {
   const [usuario, setUsuario] = useState(null);
@@ -20,7 +24,7 @@ export default function App() {
 
         try {
           // 🔥 Ejecuta las consultas (actividades del documento)
-          await ejecutarConsultas();
+          // await ejecutarConsultas(); // Si usas esta línea, asegúrate de importarla
         } catch (error) {
           console.error("❌ Error al ejecutar las consultas:", error);
         }
@@ -42,10 +46,11 @@ export default function App() {
     return <Login onLoginSuccess={() => setUsuario(auth.currentUser)} />;
   }
 
-  // Si hay usuario autenticado, mostrar Productos
+  // 🎯 Reemplazar la vista 'Productos' por 'ProductosRealtime'
+  // Esto cumple con la guía para probar el Realtime Database [cite: 30]
   return (
     <View style={{ flex: 1 }}>
-      <Productos cerrarSesion={cerrarSesion} />
+      <ProductosRealtime cerrarSesion={cerrarSesion} /> 
     </View>
   );
 }
