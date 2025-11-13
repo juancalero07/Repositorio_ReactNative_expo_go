@@ -1,19 +1,32 @@
 import React, { useEffect, useState} from "react";
-import { View, StyleSheet, Alert, Button} from "react-native";
+// Importaciones consolidadas de React Native
+import { View, StyleSheet, Alert, Button} from "react-native"; 
+// Importaciones de Firebase
 import { db } from "../database/firebaseconfig.js";
 import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc ,query, where, orderBy, limit} from "firebase/firestore";
 
-// === Importaciones de Expo para Archivos y Compartir ===
-import * as FileSystem from "expo-file-system/legacy"; 
+// === Importaciones de Expo para la práctica (Limpias) ===
+import * as DocumentPicker from "expo-document-picker"; // Requerido por la guía
+import * as FileSystem from "expo-file-system/legacy"; // Requerido por la guía
 import * as Sharing from "expo-sharing"; 
 import * as Clipboard from "expo-clipboard"; 
+// === FIN DE IMPORTACIONES DE EXPO ===
+
+// Polyfill para btoa/atob si no están disponibles en el entorno (Puede requerir: npm install base-64)
+if (typeof btoa === 'undefined') {
+  global.btoa = require('base-64').encode;
+}
+if (typeof atob === 'undefined') {
+  global.atob = require('base-64').decode;
+}
 
 import FormularioProductos from "../components/FormularioProductos.js";
 import TablaProductos from "../components/TablaProductos.js";
 
 
 // === CONSTANTE DE COLECCIONES ===
-const colecciones = ["productos", "usuarios", "edades", "ciudades"];
+// Añadida "bicicletas" a la lista de colecciones exportables
+const colecciones = ["productos", "usuarios", "edades", "ciudades", "bicicletas"];
 // ===========================================
 
 const Productos = ({cerrarSesion}) => {
@@ -129,6 +142,99 @@ const Productos = ({cerrarSesion}) => {
             return; 
         }
     };
+
+    // Función modificada: Extraer Excel de bicicletas y guardar en Firestore en colección 'bicicletas'
+    const extraerYGuardarBicicletas = async () => {
+    try {
+        Alert.alert("Inicio de Carga", "Seleccione el archivo bicicletas.xlsx");
+        
+        // Abrir selector de documentos para elegir archivo Excel
+        const result = await DocumentPicker.getDocumentAsync({
+          type: [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+            "text/csv", // Permitir CSV si el usuario subió un CSV de Excel
+          ],
+          copyToCacheDirectory: true,
+        });
+
+        if (result.canceled || !result.assets || result.assets.length === 0) {
+          Alert.alert("Cancelado", "No se seleccionó ningún archivo.");
+          return;
+        }
+
+        const { uri, name } = result.assets[0];
+        console.log(`Archivo seleccionado: ${name} en ${uri}`);
+
+        // Leer el archivo como base64
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        // Enviar a Lambda para procesar
+        const response = await fetch(
+          "https://zat0pax3ak.execute-api.us-east-2.amazonaws.com/extraerexcel", // <-- TU URL DE API GATEWAY
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ archivoBase64: base64 }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error HTTP en lambda: ${response.status}`);
+        }
+
+        const body = await response.json();
+        const { datos } = body;
+
+        if (!datos || !Array.isArray(datos) || datos.length === 0) {
+          Alert.alert(
+            "Error",
+            "No se encontraron datos en el Excel o el archivo está vacío(o)."
+          );
+          return;
+        }
+
+        console.log("Datos extraídos del Excel:", datos);
+
+        // *** CAMBIO CLAVE: Guardar cada fila en la collección 'bicicletas' ***
+        let guardados = 0;
+        let errores = 0;
+        const nombreColeccion = "bicicletas";
+
+        for (const bicicleta of datos) {
+          try {
+            // Se guardan las columnas 'marca', 'modelo' y 'precio' de tu archivo
+            await addDoc(collection(db, nombreColeccion), {
+              marca: bicicleta.marca || "",
+              modelo: bicicleta.modelo || "",
+              precio: parseFloat(bicicleta.precio) || 0, // Aseguramos que precio sea número
+              tipo: bicicleta.tipo || "",
+              color: bicicleta.color || "",
+            });
+            guardados++;
+          } catch (err) {
+            console.error("Error guardando bicicleta:", bicicleta, err);
+            errores++;
+          }
+        }
+
+        Alert.alert(
+          "Éxito",
+          `Se guardaron ${guardados} bicicletas en la colección "${nombreColeccion}". Errores: ${errores}`,
+          [{ text: "OK" }]
+        );
+      } catch (error) {
+        console.error("Error en extraerYGuardarBicicletas:", error);
+        Alert.alert(
+          "Error",
+          `Error procesando el Excel: ${error.message}`
+        );
+      }
+    };
     
     // Función para cargar todas las colecciones
     const cargarTodasLasColecciones = async () => {
@@ -234,11 +340,16 @@ const Productos = ({cerrarSesion}) => {
         setNuevoProducto({ ...nuevoProducto, [campo]: valor });
     };
 
-    // ... (Funciones CRUD de productos) ...
-    const guardarProducto = async () => { /* Tu código aquí */ };
-    const eliminarProducto = async (id) => { /* Tu código aquí */ };
-    const editarProducto = (producto) => { /* Tu código aquí */ };
-    const actualizarProducto = async () => { /* Tu código aquí */ };
+    // --- Implementación MÍNIMA de funciones CRUD de productos para evitar crash ---
+    const guardarProducto = async () => { Alert.alert("Pendiente", "Implementar lógica de guardado en Firestore."); };
+    const eliminarProducto = async (id) => { Alert.alert("Pendiente", "Implementar lógica de eliminación en Firestore."); };
+    const editarProducto = (producto) => { 
+        Alert.alert("Pendiente", "Implementar lógica de edición."); 
+        setModoEdicion(true); 
+        setIdActualizar(producto.id); 
+        setNuevoProducto({ nombre: producto.nombre, precio: producto.precio });
+    };
+    const actualizarProducto = async () => { Alert.alert("Pendiente", "Implementar lógica de actualización en Firestore."); };
 
 
     return (
@@ -250,7 +361,6 @@ const Productos = ({cerrarSesion}) => {
                 guardarProducto={guardarProducto}
                 actualizarProducto={actualizarProducto}
                 modoEdicion={modoEdicion}
-                
             />
 
             {/* BOTÓN para la consulta de ciudades */}
@@ -300,7 +410,14 @@ const Productos = ({cerrarSesion}) => {
                     onPress={() => exportarDatos("edades")} 
                 />
             </View>
-        
+            
+            {/* === BOTÓN ADAPTADO PARA EL ARCHIVO DE BICICLETAS === */}
+            <View style={{ marginVertical: 10 }}>
+                <Button title="Extraer Bicicletas desde Excel" onPress={extraerYGuardarBicicletas} />
+            </View>
+            
+           
+
             <TablaProductos
                 productos={productos}
                 eliminarProducto={eliminarProducto}

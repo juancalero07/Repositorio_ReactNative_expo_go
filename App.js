@@ -3,12 +3,12 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { View } from "react-native";
 import { auth } from "./src/database/firebaseconfig";
 import Login from "./src/views/Login";
-// import Productos from "./src/views/Productos"; 
+ import Productos from "./src/views/Productos"; 
 
 // 🎯 Importar la vista de la práctica (se mantiene)
 import ProductosRealtime from "./src/views/ProductosRealtime"; 
 // 🎯 Importar la vista de la asignación (nueva)
-import IMCCalculator from "./src/views/MCCalculator"
+import IMCCalculator from "./src/views/MCCalculator" 
 
 // import { ejecutarConsultas } from "./src/components/ConsultasFirestore"; 
 
@@ -53,7 +53,8 @@ export default function App() {
   return (
     <View style={{ flex: 1 }}>
       {/* <ProductosRealtime cerrarSesion={cerrarSesion} /> */}
-      <IMCCalculator cerrarSesion={cerrarSesion} />
+     { /*<IMCCalculator cerrarSesion={cerrarSesion} />*/}
+       <Productos cerrarSesion={cerrarSesion} />
     </View>
   );
 }
